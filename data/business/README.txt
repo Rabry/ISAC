@@ -1,0 +1,1 @@
+Clanky kategorie business
