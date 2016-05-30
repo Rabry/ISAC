@@ -1,0 +1,1 @@
+Clanky pro kategorii tech
