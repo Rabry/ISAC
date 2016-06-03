@@ -1,13 +1,18 @@
 <?php
+session_start();
 
 ini_set("memory_limit","1024M");
 
 class Mining{
 	
 	public $slova = array();	
+	public $slova_docFreq = array();
 	
 	function __construct(){
 		
+		if(!isset($_SESSION['dir']))
+			$_SESSION['dir'] = '';
+	
 	}
 	
 	function __destruct(){
@@ -46,15 +51,42 @@ class Mining{
 		return $html;
 	}
 	
+	public function vypis_podkategorie($typ)
+	{
+		$html = '';
+		
+		$this->nacti_soubor_docFreq($typ);
+		//seradim od nejvetsiho dolu
+		arsort($this->slova_docFreq);
+		
+		$i = 0;
+		//vypisu ty nejvic
+		foreach($this->slova_docFreq as $klic => $pocet)
+		{
+			if($i < 11)
+			{
+				if($i > 0)
+					$html .= '<br />';
+				$html .= '<a href="index.php?modul=mining&hledej_s_bonusem&typ='.$typ.'&hledat='.$klic.'" title="Show by category">'.$klic.'</a>';
+			}
+			$i++;
+		}
+		
+		return $html;
+	}
+	
 	public function vypis_clanky($typ, $dir)
 	{
 		$html = '';
 		
-		$html .= '<h3>'.$dir.'</h3>';
+		$_SESSION['dir'] = $dir;
 		
-		$html .= $this->hledej_radek($typ);
-		$html .= $this->hledej_radek_bonus($typ);
-		$html .= $this->hledej_radek_bonus_ngram($typ);
+		$html .= '<h3>'.$_SESSION['dir'].'</h3>';
+		
+		$html .= $this->hledej_radek_komplet($typ);
+// 		$html .= $this->hledej_radek($typ);
+// 		$html .= $this->hledej_radek_bonus($typ);
+// 		$html .= $this->hledej_radek_bonus_ngram($typ);
 		
 		$dir = 'data/'.$dir.'/';
 		$i = 1;
@@ -84,11 +116,15 @@ class Mining{
 	{
 		$html = '';
 		
-		$html .= '<h3>'.$dir.'</h3>';
+		$_SESSION['dir'] = $dir;
 		
-		$html .= $this->hledej_radek($typ);
-		$html .= $this->hledej_radek_bonus($typ);
-		$html .= $this->hledej_radek_bonus_ngram($typ);
+		$html .= '<h3>'.$_SESSION['dir'].'</h3>';
+		
+		$html .= $this->hledej_radek_komplet($typ);
+		$html .= $this->vypis_podkategorie($typ);
+// 		$html .= $this->hledej_radek($typ);
+// 		$html .= $this->hledej_radek_bonus($typ);
+// 		$html .= $this->hledej_radek_bonus_ngram($typ);
 		
 		$dir = 'data/'.$dir.'/';
 		
@@ -182,6 +218,20 @@ class Mining{
 		return $html;
 	}
 	
+	public function hledej_radek_komplet($typ)
+	{
+		$html = '';
+		
+		$html .= '
+			<form action="index.php?modul=mining&hledej_komplet&typ='.$typ.'" method="post" onsubmit="" enctype="multipart/form-data">
+				<input type="text" name="hledat" id="hledat" value="" placeholder="Search" />
+				<input type="submit" name="hledat_button" id="hledat_button" value="Search" />
+			</form><br />
+		';
+		
+		return $html;
+	}
+	
 	/**********************************************************/
 	/*		Vypisova funkce																			*/
 	/**********************************************************/
@@ -259,6 +309,37 @@ class Mining{
 						else if($radek[$i] != 0)
 							$this->slova[$akt_radek][$i] = $radek[$i];
 					}
+					
+					$akt_radek++;
+				}
+				$p++;
+			}
+		}
+		//zavreni souboru
+		fclose($soubor);
+	}
+	
+	/**********************************************************/
+	/*	Funkce pro nacteni vstupu a naplneni docFreq z matice	*/
+	/**********************************************************/
+	public function nacti_soubor_docFreq($typ)
+	{
+		//otevreni souboru
+		$soubor = fopen("data/matrix_".$typ.".csv", "r") or die("Nelze otevrit soubor");		
+		//promenna pro zjisteni radku
+		$akt_radek = 0;
+		$p = 0;
+		//pokud neni konec souboru
+		while(!feof($soubor))
+		{
+// 			$radek = fgets($soubor);
+			$radek = fgetcsv($soubor, 0, ';');
+			if(!empty($radek))
+			{		
+				if($p != 0)
+				{
+					$pocet = count($radek);
+					$this->slova_docFreq[$radek[0]] = $radek[$pocet-1];
 					
 					$akt_radek++;
 				}
@@ -405,9 +486,12 @@ class Mining{
 		else if($typ == 't')
 			$dir = 'tech';	
 		
-		$html .= $this->hledej_radek($typ);
-		$html .= $this->hledej_radek_bonus($typ);
-		$html .= $this->hledej_radek_bonus_ngram($typ);
+		$html .= '<h3>'.$_SESSION['dir'].'</h3>';
+		
+		$html .= $this->hledej_radek_komplet($typ);
+// 		$html .= $this->hledej_radek($typ);
+// 		$html .= $this->hledej_radek_bonus($typ);
+// 		$html .= $this->hledej_radek_bonus_ngram($typ);
 		
 		$slova = array();
 		$vyskyty = array();
@@ -484,9 +568,12 @@ class Mining{
 		else if($typ == 't')
 			$dir = 'tech';	
 		
-		$html .= $this->hledej_radek($typ);
-		$html .= $this->hledej_radek_bonus($typ);
-		$html .= $this->hledej_radek_bonus_ngram($typ);
+		$html .= '<h3>'.$_SESSION['dir'].'</h3>';
+		
+		$html .= $this->hledej_radek_komplet($typ);
+// 		$html .= $this->hledej_radek($typ);
+// 		$html .= $this->hledej_radek_bonus($typ);
+// 		$html .= $this->hledej_radek_bonus_ngram($typ);
 		
 		$slova = array();
 		$vyskyty = array();
@@ -585,9 +672,12 @@ class Mining{
 		
 		$this->nacti_soubor_ngram($typ, $delka, $slovo);
 		
-		$html .= $this->hledej_radek($typ);
-		$html .= $this->hledej_radek_bonus($typ);
-		$html .= $this->hledej_radek_bonus_ngram($typ);
+		$html .= '<h3>'.$_SESSION['dir'].'</h3>';
+		
+		$html .= $this->hledej_radek_komplet($typ);
+// 		$html .= $this->hledej_radek($typ);
+// 		$html .= $this->hledej_radek_bonus($typ);
+// 		$html .= $this->hledej_radek_bonus_ngram($typ);
 		
 		//projdu ulozenou matici
 		for($i=0; $i<count($this->slova); $i++) 
@@ -634,6 +724,294 @@ class Mining{
 		
 // 		$html = 'Slovo jsem nenasel';
 // 		return $html;
+	}
+	
+	/**********************************************************/
+	/*	Funkce hledani slova a jeho poctu											*/
+	/**********************************************************/
+	public function hledej_komplet($slovo, $typ)
+	{
+		$html = '';
+		
+		$dir = '';
+		
+		if($typ == 'b')
+			$dir = 'business';
+		else if($typ == 'e')
+			$dir = 'entertainment';
+		else if($typ == 'p')
+			$dir = 'politics';
+		else if($typ == 's')
+			$dir = 'sport';
+		else if($typ == 't')
+			$dir = 'tech';	
+		
+		$html .= '<h3>'.$_SESSION['dir'].'</h3>';
+		
+		$html .= $this->hledej_radek_komplet($typ);
+// 		$html .= $this->hledej_radek($typ);
+// 		$html .= $this->hledej_radek_bonus($typ);
+// 		$html .= $this->hledej_radek_bonus_ngram($typ);
+		
+		$slova = array();
+		$vyskyty = array();
+		//rozdelim slova podle mezer
+		$slova = explode(' ', $slovo);
+		
+		//nactu zakladni matici
+		$this->nacti_soubor($_GET['typ']);
+		
+		$delka = 0;
+		//1. projdu jednotliva slova a udelam si pro ne sumaci
+		for($p=0; $p<count($slova); $p++)
+		{
+			if($slova[$p] != '')
+			{
+				for($i=0; $i<count($this->slova); $i++) 
+				{
+					//pokud najdu slovo
+					if($slova[$p] == $this->slova[$i]['slovo'])
+					{
+						$koeficient = 1+(1/$this->slova[$i]['docFreq']);
+						//projdu jeho vyskyty a ulozim si je
+						foreach($this->slova[$i] as $dokument => $kolik)
+						{
+							if($dokument != 'sum' && $dokument != 'docFreq' && $dokument != 'slovo')
+							{
+								if(array_key_exists($dokument, $vyskyty))
+									$vyskyty[$dokument] = $vyskyty[$dokument]+$koeficient;
+								else
+									$vyskyty[$dokument] = $koeficient;
+							}
+						}
+					}
+				}
+				$delka++;
+			}
+		}
+		
+		//2. udelam si ruzne kombinace slov
+		if($delka > 1)
+		{
+// 			echo '2x :<br />';
+			$this->nacti_soubor_ngram($typ, 2, $slovo);
+			for($i=0; $i<count($slova); $i++)
+			{
+				if($slova[$i] != '')
+				{
+					//vezmu jedno slovo a hodim k nemu dalsi
+					for($j=$i; $j<count($slova); $j++)
+					{
+						if($slova[$j] != '' && $j != $i)
+						{
+							$hledane_slovo = $slova[$i].'_'.$slova[$j];
+// 							echo $hledane_slovo.'<br />';
+							
+							for($v=0; $v<count($this->slova); $v++) 
+							{
+								//pokud najdu slovo
+								if($hledane_slovo == $this->slova[$v]['slovo'])
+								{
+									$koeficient = 1+(1/$this->slova[$v]['docFreq']);
+									//projdu jeho vyskyty a ulozim si je
+									foreach($this->slova[$v] as $dokument => $kolik)
+									{
+										if($dokument != 'sum' && $dokument != 'docFreq' && $dokument != 'slovo')
+										{
+											if(array_key_exists($dokument, $vyskyty))
+												$vyskyty[$dokument] = $vyskyty[$dokument]+$koeficient;
+											else
+												$vyskyty[$dokument] = $koeficient;
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		if($delka > 2)
+		{
+// 			echo '3x :<br />';
+			$this->nacti_soubor_ngram($typ, 3, $slovo);
+			for($i=0; $i<count($slova); $i++)
+			{
+				if($slova[$i] != '')
+				{
+					//vezmu jedno slovo a hodim k nemu dalsi
+					for($j=$i; $j<count($slova); $j++)
+					{
+						if($slova[$j] != '' && $j != $i)
+						{
+							for($k=$j; $k<count($slova); $k++)
+							{
+								if($slova[$k] != '' && $k != $i && $k != $j)
+								{
+									$hledane_slovo = $slova[$i].'_'.$slova[$j].'_'.$slova[$k];
+// 									echo $hledane_slovo.'<br />';
+									
+									for($v=0; $v<count($this->slova); $v++) 
+									{
+										//pokud najdu slovo
+										if($hledane_slovo == $this->slova[$v]['slovo'])
+										{
+											$koeficient = 1+(1/$this->slova[$v]['docFreq']);
+											//projdu jeho vyskyty a ulozim si je
+											foreach($this->slova[$v] as $dokument => $kolik)
+											{
+												if($dokument != 'sum' && $dokument != 'docFreq' && $dokument != 'slovo')
+												{
+													if(array_key_exists($dokument, $vyskyty))
+														$vyskyty[$dokument] = $vyskyty[$dokument]+$koeficient;
+													else
+														$vyskyty[$dokument] = $koeficient;
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		if($delka > 3)
+		{
+// 			echo '4x :<br />';
+			$this->nacti_soubor_ngram($typ, 4, $slovo);
+			for($i=0; $i<count($slova); $i++)
+			{
+				if($slova[$i] != '')
+				{
+					//vezmu jedno slovo a hodim k nemu dalsi
+					for($j=$i; $j<count($slova); $j++)
+					{
+						if($slova[$j] != '' && $j != $i)
+						{
+							for($k=$j; $k<count($slova); $k++)
+							{
+								if($slova[$k] != '' && $k != $i && $k != $j)
+								{
+									for($l=$k; $l<count($slova); $l++)
+									{
+										if($slova[$l] != '' && $l != $i && $l != $j && $l != $k)
+										{
+											$hledane_slovo = $slova[$i].'_'.$slova[$j].'_'.$slova[$k].'_'.$slova[$l];
+// 											echo $hledane_slovo.'<br />';
+									
+											for($v=0; $v<count($this->slova); $v++) 
+											{
+												//pokud najdu slovo
+												if($hledane_slovo == $this->slova[$v]['slovo'])
+												{
+													$koeficient = 1+(1/$this->slova[$v]['docFreq']);
+													//projdu jeho vyskyty a ulozim si je
+													foreach($this->slova[$v] as $dokument => $kolik)
+													{
+														if($dokument != 'sum' && $dokument != 'docFreq' && $dokument != 'slovo')
+														{
+															if(array_key_exists($dokument, $vyskyty))
+																$vyskyty[$dokument] = $vyskyty[$dokument]+$koeficient;
+															else
+																$vyskyty[$dokument] = $koeficient;
+														}
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		if($delka > 4)
+		{
+// 			echo '5x :<br />';
+			$this->nacti_soubor_ngram($typ, 5, $slovo);
+			for($i=0; $i<count($slova); $i++)
+			{
+				if($slova[$i] != '')
+				{
+					//vezmu jedno slovo a hodim k nemu dalsi
+					for($j=$i; $j<count($slova); $j++)
+					{
+						if($slova[$j] != '' && $j != $i)
+						{
+							for($k=$j; $k<count($slova); $k++)
+							{
+								if($slova[$k] != '' && $k != $i && $k != $j)
+								{
+									for($l=$k; $l<count($slova); $l++)
+									{
+										if($slova[$l] != '' && $l != $i && $l != $j && $l != $k)
+										{
+											for($m=$l; $m<count($slova); $m++)
+											{
+												if($slova[$m] != '' && $m != $i && $m != $j && $m != $k && $m != $l)
+												{
+													$hledane_slovo = $slova[$i].'_'.$slova[$j].'_'.$slova[$k].'_'.$slova[$l].'_'.$slova[$m];
+// 													echo $hledane_slovo.'<br />';
+									
+													for($v=0; $v<count($this->slova); $v++) 
+													{
+														//pokud najdu slovo
+														if($hledane_slovo == $this->slova[$v]['slovo'])
+														{
+															$koeficient = 1+(1/$this->slova[$v]['docFreq']);
+															//projdu jeho vyskyty a ulozim si je
+															foreach($this->slova[$v] as $dokument => $kolik)
+															{
+																if($dokument != 'sum' && $dokument != 'docFreq' && $dokument != 'slovo')
+																{
+																	if(array_key_exists($dokument, $vyskyty))
+																		$vyskyty[$dokument] = $vyskyty[$dokument]+$koeficient;
+																	else
+																		$vyskyty[$dokument] = $koeficient;
+																}
+															}
+														}
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		//seradim od nejvetsiho dolu
+		arsort($vyskyty);
+		
+		//vypis
+		$html .= '<b>'.$slovo.'</b> is in documents:<br /><br />';
+		foreach($vyskyty as $klic => $pocet)
+		{
+			$html .= $pocet.' for document '.$klic.'<br />';
+// 			$html .= '<div class="clanek">';
+// 			if(strlen($klic) == 1)
+// 				$soubor = '00'.$klic.'.txt';
+// 			else if(strlen($klic) == 2)
+// 				$soubor = '0'.$klic.'.txt';
+// 			else
+// 				$soubor = $klic.'.txt';
+// 			$html .= $klic.'.<br />';
+// 			$html .= $this->nacti_text('data/'.$dir.'/'.$soubor);
+// 			$html .= '</div>';
+// 			$html .= '<br />';
+		}
+		return $html;
 	}
 }
 

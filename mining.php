@@ -19,12 +19,21 @@ if(isset($_GET['hledej']))
 if(isset($_GET['hledej_s_bonusem']))
 {
 	$mining->nacti_soubor($_GET['typ']);
-	echo $mining->hledej_s_bonusem($_POST['hledat'], $_GET['typ']);
+	if(isset($_GET['hledat']))
+		$hledat = $_GET['hledat'];
+	else
+		$hledat = $_POST['hledat'];
+	echo $mining->hledej_s_bonusem($hledat, $_GET['typ']);
 }
 
 if(isset($_GET['hledej_s_bonusem_ngram']))
 {
 	echo $mining->hledej_s_bonusem_ngram($_POST['hledat'], $_GET['typ']);
+}
+
+if(isset($_GET['hledej_komplet']))
+{
+	echo $mining->hledej_komplet($_POST['hledat'], $_GET['typ']);
 }
 
 ?>
