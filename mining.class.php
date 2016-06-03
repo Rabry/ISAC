@@ -166,6 +166,20 @@ class Mining{
 		return $html;
 	}
 	
+	public function hledej_radek_bonus_ngram($typ)
+	{
+		$html = '';
+		
+		$html .= '
+			<form action="index.php?modul=mining&hledej_s_bonusem&typ='.$typ.'" method="post" onsubmit="" enctype="multipart/form-data">
+				<input type="text" name="hledat" id="hledat" value="" placeholder="Search with bonus" />
+				<input type="submit" name="hledat_button" id="hledat_button" value="Search" />
+			</form><br />
+		';
+		
+		return $html;
+	}
+	
 	/**********************************************************/
 	/*		Vypisova funkce																			*/
 	/**********************************************************/
@@ -283,6 +297,67 @@ class Mining{
 						else if($i == $pocet-1)
 							$this->slova[$akt_radek]['docFreq'] = $radek[$i];
 						else
+							$this->slova[$akt_radek][$i] = $radek[$i];
+					}
+					
+					$akt_radek++;
+				}
+				$p++;
+			}
+		}
+		//zavreni souboru
+		fclose($soubor);
+	}
+	
+	/**********************************************************/
+	/*	Funkce pro nacteni vstupu a naplneni matice a popisku	*/
+	/**********************************************************/
+	public function nacti_soubor_ngram($typ, $delka, $slovo)
+	{
+		//otevreni souboru
+		$dir = 'data/';
+		if($delka == 2)
+			$dir .= 'ngrams2/';
+		else if($delka == 3)
+			$dir .= 'ngrams3/';
+		else if($delka == 4)
+			$dir .= 'ngrams4/';
+		else if($delka == 5)
+			$dir .= 'ngrams5/';
+		else
+		{
+			$this->nacti_soubor($typ);
+			echo $this->hledej_s_bonusem($slovo, $typ);
+			exit;
+		}
+		
+		$soubor = fopen($dir."matrix_".$typ.".csv", "r") or die("Nelze otevrit soubor");		
+		//promenna pro zjisteni radku
+		$akt_radek = 0;
+		$p = 0;
+		//pokud neni konec souboru
+		while(!feof($soubor))
+		{
+// 			$radek = fgets($soubor);
+			$radek = fgetcsv($soubor, 0, ';');
+			if(!empty($radek))
+			{		
+				if($p != 0)
+				{
+// 					$rozdeleni = explode(';', $radek);
+// 					$rozdeleni = $this->ostrihni($rozdeleni);
+					
+					$this->slova[$akt_radek]['slovo'] = $radek[0];
+					
+					$pocet = count($radek);
+					//projdu si pocty slov v jednotlivych clancich
+					for($i=1; $i<$pocet; $i++)
+					{
+						if($i == $pocet-2)
+							$this->slova[$akt_radek]['sum'] = $radek[$i];
+						else if($i == $pocet-1)
+							$this->slova[$akt_radek]['docFreq'] = $radek[$i];
+						else if($radek[$i] != 0)
 							$this->slova[$akt_radek][$i] = $radek[$i];
 					}
 					
@@ -422,6 +497,96 @@ class Mining{
 									$vyskyty[$dokument] = $koeficient;
 							}
 						}
+					}
+				}
+			}
+		}
+		//seradim od nejvetsiho dolu
+		arsort($vyskyty);
+		
+		//vypis
+		$html .= '<b>'.$slovo.'</b> is in documents:<br /><br />';
+		foreach($vyskyty as $klic => $pocet)
+		{
+			$html .= $pocet.'x in document '.$klic.'<br />';
+			$html .= '<div class="clanek">';
+			if(strlen($klic) == 1)
+				$soubor = '00'.$klic.'.txt';
+			else if(strlen($klic) == 2)
+				$soubor = '0'.$klic.'.txt';
+			else
+				$soubor = $klic.'.txt';
+			$html .= $klic.'.<br />';
+			$html .= $this->nacti_text('data/'.$dir.'/'.$soubor);
+			$html .= '</div>';
+			$html .= '<br />';
+		}
+		return $html;
+		
+// 		$html = 'Slovo jsem nenasel';
+// 		return $html;
+	}
+	
+	/**********************************************************/
+	/*	Funkce hledani slova a jeho poctu											*/
+	/**********************************************************/
+	public function hledej_s_bonusem_ngram($slovo, $typ)
+	{
+		$html = '';
+		
+		$dir = '';
+		
+		if($typ == 'b')
+			$dir = 'business';
+		else if($typ == 'e')
+			$dir = 'entertainment';
+		else if($typ == 'p')
+			$dir = 'politics';
+		else if($typ == 's')
+			$dir = 'sport';
+		else if($typ == 't')
+			$dir = 'tech';	
+		
+		$html .= $this->hledej_radek($typ);
+		$html .= $this->hledej_radek_bonus($typ);
+		
+		$slova = array();
+		$vyskyty = array();
+		//rozdelim slova podle mezer
+		$slova = explode(' ', $slovo);
+		
+		$vysledne_slovo = '';
+		$delka = 0;
+		//ted rozdelene slovo spojim do formatu v jakym mam ulozene ngramy
+		for($p=0; $p<count($slova); $p++)
+		{
+			if($slova[$p] != '')
+			{
+				if($vysledne_slovo != '')
+					$vysledne_slovo .= '_';
+				$vysledne_slovo .= $slova[$p];
+				$delka++;
+			}
+		}
+		
+		$this->$mining->nacti_soubor_ngram($typ, $delka, $slovo);
+		
+		//projdu ulozenou matici
+		for($i=0; $i<count($this->slova); $i++) 
+		{
+			//pokud najdu slovo
+			if($vysledne_slovo == $this->slova[$i]['slovo'])
+			{
+				$koeficient = 1+(1/$this->slova[$i]['docFreq']);
+				//projdu jeho vyskyty a ulozim si je
+				foreach($this->slova[$i] as $dokument => $kolik)
+				{
+					if($dokument != 'sum' && $dokument != 'docFreq' && $dokument != 'slovo')
+					{
+						if(array_key_exists($dokument, $vyskyty))
+							$vyskyty[$dokument] = $vyskyty[$dokument]+$koeficient;
+						else
+							$vyskyty[$dokument] = $koeficient;
 					}
 				}
 			}

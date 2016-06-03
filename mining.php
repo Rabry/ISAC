@@ -22,4 +22,9 @@ if(isset($_GET['hledej_s_bonusem']))
 	echo $mining->hledej_s_bonusem($_POST['hledat'], $_GET['typ']);
 }
 
+if(isset($_GET['hledej_s_bonusem_ngram']))
+{
+	echo $mining->hledej_s_bonusem_ngram($_POST['hledat'], $_GET['typ']);
+}
+
 ?>
