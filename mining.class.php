@@ -54,6 +54,7 @@ class Mining{
 		
 		$html .= $this->hledej_radek($typ);
 		$html .= $this->hledej_radek_bonus($typ);
+		$html .= $this->hledej_radek_bonus_ngram($typ);
 		
 		$dir = 'data/'.$dir.'/';
 		$i = 1;
@@ -87,6 +88,7 @@ class Mining{
 		
 		$html .= $this->hledej_radek($typ);
 		$html .= $this->hledej_radek_bonus($typ);
+		$html .= $this->hledej_radek_bonus_ngram($typ);
 		
 		$dir = 'data/'.$dir.'/';
 		
@@ -171,8 +173,8 @@ class Mining{
 		$html = '';
 		
 		$html .= '
-			<form action="index.php?modul=mining&hledej_s_bonusem&typ='.$typ.'" method="post" onsubmit="" enctype="multipart/form-data">
-				<input type="text" name="hledat" id="hledat" value="" placeholder="Search with bonus" />
+			<form action="index.php?modul=mining&hledej_s_bonusem_ngram&typ='.$typ.'" method="post" onsubmit="" enctype="multipart/form-data">
+				<input type="text" name="hledat" id="hledat" value="" placeholder="Search with bonus and n-grams (max 5 words)" />
 				<input type="submit" name="hledat_button" id="hledat_button" value="Search" />
 			</form><br />
 		';
@@ -335,6 +337,7 @@ class Mining{
 		//promenna pro zjisteni radku
 		$akt_radek = 0;
 		$p = 0;
+		$hlavicka = array();
 		//pokud neni konec souboru
 		while(!feof($soubor))
 		{
@@ -358,10 +361,22 @@ class Mining{
 						else if($i == $pocet-1)
 							$this->slova[$akt_radek]['docFreq'] = $radek[$i];
 						else if($radek[$i] != 0)
-							$this->slova[$akt_radek][$i] = $radek[$i];
+							$this->slova[$akt_radek][intval($hlavicka[$i])] = $radek[$i];
 					}
 					
 					$akt_radek++;
+				}
+				else
+				{	
+					$pocet = count($radek);
+					for($i=1; $i<$pocet; $i++)
+					{
+						if($radek[$i] != 'sum' && $radek[$i] != 'docFreq')
+						{
+							$rozdelene = explode($typ,$radek[$i]);
+							$hlavicka[$i] = $rozdelene[1];
+						}
+					}
 				}
 				$p++;
 			}
@@ -392,6 +407,7 @@ class Mining{
 		
 		$html .= $this->hledej_radek($typ);
 		$html .= $this->hledej_radek_bonus($typ);
+		$html .= $this->hledej_radek_bonus_ngram($typ);
 		
 		$slova = array();
 		$vyskyty = array();
@@ -470,6 +486,7 @@ class Mining{
 		
 		$html .= $this->hledej_radek($typ);
 		$html .= $this->hledej_radek_bonus($typ);
+		$html .= $this->hledej_radek_bonus_ngram($typ);
 		
 		$slova = array();
 		$vyskyty = array();
@@ -547,9 +564,6 @@ class Mining{
 		else if($typ == 't')
 			$dir = 'tech';	
 		
-		$html .= $this->hledej_radek($typ);
-		$html .= $this->hledej_radek_bonus($typ);
-		
 		$slova = array();
 		$vyskyty = array();
 		//rozdelim slova podle mezer
@@ -569,7 +583,11 @@ class Mining{
 			}
 		}
 		
-		$this->$mining->nacti_soubor_ngram($typ, $delka, $slovo);
+		$this->nacti_soubor_ngram($typ, $delka, $slovo);
+		
+		$html .= $this->hledej_radek($typ);
+		$html .= $this->hledej_radek_bonus($typ);
+		$html .= $this->hledej_radek_bonus_ngram($typ);
 		
 		//projdu ulozenou matici
 		for($i=0; $i<count($this->slova); $i++) 
@@ -578,6 +596,7 @@ class Mining{
 			if($vysledne_slovo == $this->slova[$i]['slovo'])
 			{
 				$koeficient = 1+(1/$this->slova[$i]['docFreq']);
+// 				print_r($this->slova[$i]);
 				//projdu jeho vyskyty a ulozim si je
 				foreach($this->slova[$i] as $dokument => $kolik)
 				{
