@@ -63,14 +63,15 @@ class Mining{
 		//vypisu ty nejvic
 		foreach($this->slova_docFreq as $klic => $pocet)
 		{
-			if($i < 11)
+			if($i < 31)
 			{
 				if($i > 0)
-					$html .= '<br />';
+					$html .= ' | ';
 				$html .= '<a href="index.php?modul=mining&hledej_s_bonusem&typ='.$typ.'&hledat='.$klic.'" title="Show by category">'.$klic.'</a>';
 			}
 			$i++;
 		}
+		$html .= '<br />';
 		
 		return $html;
 	}
@@ -339,7 +340,7 @@ class Mining{
 				if($p != 0)
 				{
 					$pocet = count($radek);
-					$this->slova_docFreq[$radek[0]] = $radek[$pocet-1];
+					$this->slova_docFreq[$radek[0]] = $radek[$pocet-2];
 					
 					$akt_radek++;
 				}
