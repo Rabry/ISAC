@@ -1,0 +1,1 @@
+Soubor pro matice ngramu
